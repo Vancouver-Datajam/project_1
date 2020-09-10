@@ -1,5 +1,5 @@
 # Citizen Science ml team
-# Zaid's Team Project: <Title of Project>
+# Zaid's Team Project: Earth Challenge Integrated Data: Plastic Pollution
 
 ## Team members' names: <>
 
@@ -19,5 +19,7 @@ sample script usage for script script.R
 
 ## References
 
-1. Any project you used, whether an open source tool, a library, an online, a manuscript, a data source.
+1. Monitoring and Assessment Project: Get Started Toolbox  https://marinedebris.noaa.gov/research/monitoring-toolbox
+2. Marine LitterWatch   https://www.eea.europa.eu/themes/water/europes-seas-and-coasts/assessments/marine-litterwatch#tab-news-and-articles
+
 
