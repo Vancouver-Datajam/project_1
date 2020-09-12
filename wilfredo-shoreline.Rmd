@@ -72,7 +72,9 @@ test <- cad_data %>%
   geom_col() +
   scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months")
   
-plotly::ggplotly(test)
+plotly::ggplotly(test) %>% 
+  htmlwidgets::saveWidget("total_waste.html")
+
 ```
 
 
