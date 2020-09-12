@@ -51,7 +51,7 @@ dat <- read.csv(file = "raw_data/_Combined_MLW,_MDMAP,_TIDES_Data__All_Points,_2
 
 cad_data <- dat %>% 
   filter(ISO_CC == "CA") %>% 
-  select(-FID:-LocationFreqID, 
+  select(-FID:-LocationFreqID, # Remove uninformative columns.
          -Dataset:-CountryName_FromSource,
          -TotalArea_Sq_m,
          -WaterfrontName:-TotalVolunteers,
@@ -59,22 +59,49 @@ cad_data <- dat %>%
          -SUM_Hard_BucketOrCrate,
          -SUM_HardSoftLollipopStick_EarBu,
          -Count_:-FishingOtherPlasticDebris2) %>% 
-  mutate(date_plot = floor_date(as_date(DateStandardized), unit = "month"))
+  mutate(date_daily = as_date(DateStandardized), 
+         date_year_month = floor_date(date_daily, unit = "month")) %>% # Create year-month field.
+  filter(date_year_month >= "2016-06-01")
+
+# line plot
+# category
+
 
 ```
 
 
 ```{r wrangle, echo=FALSE}
-test <- cad_data %>% 
-  group_by(date = date_plot) %>% 
+
+# Monthly bar chart.
+bar_chart <- cad_data %>% 
+  group_by(date_year_month) %>% 
+  summarise(total_items = sum(Totalltems_EventRecord)) %>% 
+  ggplot(aes(date_year_month, total_items)) +
+  geom_col() +
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months") 
+
+# Save interactive plotly object
+plotly::ggplotly(bar_chart) %>% 
+  htmlwidgets::saveWidget("total_waste_bar.html")
+
+# Daily line chart
+line_chart <- cad_data %>% 
+  group_by(date = date_year_month) %>%  
   summarise(total_items = sum(Totalltems_EventRecord)) %>% 
   ggplot(aes(date, total_items)) +
-  geom_col() +
-  scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months")
-  
-plotly::ggplotly(test) %>% 
-  htmlwidgets::saveWidget("total_waste.html")
+  geom_line() +
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") 
 
+faceted_bar_chart <- cad_data %>% 
+  filter(str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL", negate = TRUE)) %>% 
+  group_by(date_year_month, ISO_SUB) %>% 
+  summarise(total_items = sum(Totalltems_EventRecord)) %>% 
+  ggplot(aes(date_year_month, total_items, ISO_SUB)) +
+  geom_col() +
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") +
+  facet_wrap(vars(ISO_SUB))
+
+faceted_bar_chart
 ```
 
 
