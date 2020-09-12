@@ -10,7 +10,6 @@ output: html_document
 # envin -----------------------------------
 
 library(tidyverse)
-library(arrow)
 library(DataExplorer)
 library(leaflet)
 library(lubridate)
@@ -38,16 +37,29 @@ dat <-
 # PS: discard the rest of data
 dat <- 
   dat %>%
-  filter(CountryName_FromSource == "Canada")
+  mutate(DateOriginal = ymd_hms(DateOriginal)) %>%
+  filter(CountryName_FromSource == "Canada" & 
+           DateOriginal >= as.Date("2016-06-01"))
+  
 
 
 
 ```
 
 
+## Background
+- Date from `r min(dat$DateOriginal)` to `r max(dat$DateOriginal)`
+- Data earlier than `r min(dat$DateOriginal)` is discarded because the Shoreline Cleanup had a change of data practices around then.
+
+
+
 
 ## Regional map
-
+- To observe the statistics by region an interactive map.
+- You can zoom in and out on the map, as well as click the circle to see more information.
+- Each circle represents the item recorded per sub-country area. 
+- The circle size indicates the total items recoreded, and the red color means the item recorded to higher than the average (i.e. major area).
+- Default shows data in Year 2018, and you can check the box at right top corner to look at other years.
 ```{r echo=FALSE}
 
 
@@ -56,12 +68,21 @@ by_subcountry <-
   dat %>%
   group_by(SubCountry_L2_FromSource, Year) %>%
   summarise(
-    across(c(X, Y, PCT_PlasticAndFoam),
-           mean),
-    across(c(Totalltems_EventRecord, TotalClassifiedItems_EC2020),
-           sum)
+    across(c(X, 
+             Y, 
+             TotalLength_m,
+             TotalVolunteers,
+             PCT_PlasticAndFoam),
+           mean,
+           .names = "{col}_Mean"),
+    across(c(Totalltems_EventRecord, 
+             TotalClassifiedItems_EC2020,
+             SUM_Hard_PlasticBeverageBottle:SUM_OtherPlasticDebris),
+           sum,
+           .names = "{col}_Sum"),
+    Cnt = n_distinct(UniqueID)
   ) %>%
-  mutate(Is_AboveMean = Totalltems_EventRecord > 7231)
+  mutate(Is_AboveMean = Totalltems_EventRecord_Sum > 7231)
 
 
 
@@ -69,51 +90,94 @@ by_subcountry <-
 pal <- colorFactor(c("blue", "red"), domain = c(FALSE, TRUE))
 
 
+# radius
+radius_selected <- 5
+
 
 # regional map
 leaflet() %>%
   addTiles() %>%
-  addCircles(
+  addCircles(                                                                            # 2016
     data = 
       by_subcountry %>%
-      filter(Year == 2018),
-    group = "2018",
-    lng = ~ X,
-    lat = ~ Y,
-    radius = ~Totalltems_EventRecord / 50,
+      filter(Year == 2016),
+    group = "2016",
+    lng = ~ X_Mean,
+    lat = ~ Y_Mean,
+    radius = ~Totalltems_EventRecord_Sum/radius_selected,
     color = ~ pal(Is_AboveMean),
     popup = ~ paste0(
       "<b><font size = 4>",
       SubCountry_L2_FromSource,
       "</b></font>",
       "<br>Total Items recorded: ",
-      format(Totalltems_EventRecord, big.mark = ","),
+      format(Totalltems_EventRecord_Sum, big.mark = ","),
       "<br>Plastic and foam %: ",
-      paste0(round(PCT_PlasticAndFoam, 1), "%")
+      paste0(round(PCT_PlasticAndFoam_Mean, 1), "%"),
+      "<br>Average length of clean up site: ",
+      format(round(TotalLength_m_Mean), big.mark = ","),
+      "<br>Average number of volunteers: ",
+      format(round(TotalVolunteers_Mean, 1), big.mark = ","),
+      "<br>No of unique ID: ",
+      Cnt
     )
   ) %>%
-  addCircles(
+  addCircles(                                                                            # 2017
     data = 
       by_subcountry %>%
       filter(Year == 2017),
     group = "2017",
-    lng = ~ X,
-    lat = ~ Y,
-    radius = ~Totalltems_EventRecord,
+    lng = ~ X_Mean,
+    lat = ~ Y_Mean,
+    radius = ~Totalltems_EventRecord_Sum/radius_selected,
     color = ~ pal(Is_AboveMean),
     popup = ~ paste0(
       "<b><font size = 4>",
       SubCountry_L2_FromSource,
       "</b></font>",
       "<br>Total Items recorded: ",
-      format(Totalltems_EventRecord, big.mark = ","),
+      format(Totalltems_EventRecord_Sum, big.mark = ","),
       "<br>Plastic and foam %: ",
-      paste0(round(PCT_PlasticAndFoam, 1), "%")
-    )) %>%
+      paste0(round(PCT_PlasticAndFoam_Mean, 1), "%"),
+      "<br>Average length of clean up site: ",
+      format(round(TotalLength_m_Mean), big.mark = ","),
+      "<br>Average number of volunteers: ",
+      format(round(TotalVolunteers_Mean, 1), big.mark = ","),
+      "<br>No of unique ID: ",
+      Cnt
+    )
+  ) %>%
+  addCircles(                                                                            # 2018
+    data = 
+      by_subcountry %>%
+      filter(Year == 2018),
+    group = "2018",
+    lng = ~ X_Mean,
+    lat = ~ Y_Mean,
+    radius = ~Totalltems_EventRecord_Sum/radius_selected,
+    color = ~ pal(Is_AboveMean),
+    popup = ~ paste0(
+      "<b><font size = 4>",
+      SubCountry_L2_FromSource,
+      "</b></font>",
+      "<br>Total Items recorded: ",
+      format(Totalltems_EventRecord_Sum, big.mark = ","),
+      "<br>Plastic and foam %: ",
+      paste0(round(PCT_PlasticAndFoam_Mean, 1), "%"),
+      "<br>Average length of clean up site: ",
+      format(round(TotalLength_m_Mean), big.mark = ","),
+      "m",
+      "<br>Average number of volunteers: ",
+      format(round(TotalVolunteers_Mean, 1), big.mark = ","),
+      "<br>No of unique ID: ",
+      Cnt
+    )
+  ) %>%
   addLayersControl(
-    overlayGroups = c("2017", "2018"),
+    overlayGroups = c("2016", "2017", "2018"),
     options = layersControlOptions(collapsed = FALSE)
-  )
+  ) %>%
+  hideGroup(c("2016", "2017"))
 
 
 
@@ -121,22 +185,122 @@ leaflet() %>%
 ```
 
 
-## Small region
-### 1. Great Vancouver (2018)
+## Hot spots for regions with high amount of items
+```{r top_5, include= FALSE, warning=FALSE, message=FALSE}
+
+# top 5 region
+top_5 <-
+  dat %>% 
+  group_by(SubCountry_L2_FromSource) %>% 
+  summarise(Totalltems_EventRecord = sum(Totalltems_EventRecord, na.rm = TRUE)) %>%
+  slice_max(Totalltems_EventRecord, n = 5)
+
+
+```
+- Show the indivudal spots for the top 5 regions: `r top_5$SubCountry_L2_FromSource`
+- To observe the hot spot for the top 5 regions
+
+
+```{r fun_map, include=FALSE, message=FALSE, warning=FALSE}
+
+map_spot <- function(region){
+
+  # plot
+  map_region <-
+    leaflet() %>%
+    addTiles() %>%
+    addMarkers(
+      group = "2018",
+      data =
+        dat %>% filter(SubCountry_L2_FromSource == region &
+                         Year == 2018),
+      lng = ~ X,
+      lat = ~ Y,
+      label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+      clusterOptions = markerClusterOptions()
+    ) %>%
+    addMarkers(
+      group = "2017",
+      data =
+        dat %>% filter(SubCountry_L2_FromSource == region &
+                         Year == 2017),
+      lng = ~ X,
+      lat = ~ Y,
+      label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+      clusterOptions = markerClusterOptions()
+    ) %>%
+    addMarkers(
+      group = "2016",
+      data =
+        dat %>% filter(SubCountry_L2_FromSource == region &
+                         Year == 2016),
+      lng = ~ X,
+      lat = ~ Y,
+      label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+      clusterOptions = markerClusterOptions()
+    ) %>%
+    addLayersControl(
+      overlayGroups = c("2016", "2017", "2018"),
+      options = layersControlOptions(collapsed = FALSE)
+    ) %>%
+    hideGroup(c("2016", "2017"))
+  
+  
+  # return
+  return(map_region)
+  
+}
+
+
+
+```
+
+
+
+### 1. Great Vancouver
 ``````{r echo=FALSE}
 
-# Great vancouver
-leaflet() %>%
-  addTiles() %>%
-  addMarkers(
-    data =
-      dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
-                       Year == 2018),
-    lng = ~ X,
-    lat = ~ Y,
-    label = ~ paste0(ymd_hms(DateOriginal), ": ", Totalltems_EventRecord, " items"),
-    clusterOptions = markerClusterOptions()
-  )
+# # Great vancouver
+# leaflet() %>%
+#   addTiles() %>%
+#   addMarkers(
+#     group = "2018",
+#     data =
+#       dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
+#                        Year == 2018),
+#     lng = ~ X,
+#     lat = ~ Y,
+#     label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+#     clusterOptions = markerClusterOptions()
+#   ) %>%
+#   addMarkers(
+#     group = "2017",
+#     data =
+#       dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
+#                        Year == 2017),
+#     lng = ~ X,
+#     lat = ~ Y,
+#     label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+#     clusterOptions = markerClusterOptions()
+#   ) %>%
+#   addMarkers(
+#     group = "2016",
+#     data =
+#       dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
+#                        Year == 2016),
+#     lng = ~ X,
+#     lat = ~ Y,
+#     label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+#     clusterOptions = markerClusterOptions()
+#   ) %>%
+#   addLayersControl(
+#     overlayGroups = c("2016", "2017", "2018"),
+#     options = layersControlOptions(collapsed = FALSE)
+#   ) %>%
+#   hideGroup(c("2016", "2017"))
+
+map_spot("Greater Vancouver")
+
 
 ```
 
