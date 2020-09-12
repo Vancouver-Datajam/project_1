@@ -47,20 +47,21 @@ dat <-
 ```
 
 
-## Background
+## A. Background
 - Date from `r min(dat$DateOriginal)` to `r max(dat$DateOriginal)`
 - Data earlier than `r min(dat$DateOriginal)` is discarded because the Shoreline Cleanup had a change of data practices around then.
 
 
 
 
-## Regional map
+## B. Regional map
 - To observe the statistics by region an interactive map.
 - You can zoom in and out on the map, as well as click the circle to see more information.
 - Each circle represents the item recorded per sub-country area. 
 - The circle size indicates the total items recoreded, and the red color means the item recorded to higher than the average (i.e. major area).
 - Default shows data in Year 2018, and you can check the box at right top corner to look at other years.
-```{r echo=FALSE}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10}
 
 
 # group data by subcountry
@@ -91,12 +92,17 @@ pal <- colorFactor(c("blue", "red"), domain = c(FALSE, TRUE))
 
 
 # radius
-radius_selected <- 5
+radius_selected <- 3
 
 
 # regional map
 leaflet() %>%
   addTiles() %>%
+  setView(
+    lat = 51.197691,
+    lng = -98,
+    zoom = 4
+    ) %>%
   addCircles(                                                                            # 2016
     data = 
       by_subcountry %>%
@@ -185,20 +191,24 @@ leaflet() %>%
 ```
 
 
-## Hot spots for regions with high amount of items
+## C. Top 5 regions with the highest amount
 ```{r top_5, include= FALSE, warning=FALSE, message=FALSE}
 
 # top 5 region
 top_5 <-
   dat %>% 
   group_by(SubCountry_L2_FromSource) %>% 
-  summarise(Totalltems_EventRecord = sum(Totalltems_EventRecord, na.rm = TRUE)) %>%
+  summarise(
+    Totalltems_EventRecord = sum(Totalltems_EventRecord, na.rm = TRUE),
+    Cnt = n_distinct(UniqueID)
+    ) %>%
   slice_max(Totalltems_EventRecord, n = 5)
 
 
 ```
 - Show the indivudal spots for the top 5 regions: `r top_5$SubCountry_L2_FromSource`
-- To observe the hot spot for the top 5 regions
+- You can zoom in the map. The number in each circle shows the number of markers at that area.
+- When you hover your mouse on each location marker, you will see the date and the number of items recorded at that spot.
 
 
 ```{r fun_map, include=FALSE, message=FALSE, warning=FALSE}
@@ -216,7 +226,7 @@ map_spot <- function(region){
                          Year == 2018),
       lng = ~ X,
       lat = ~ Y,
-      label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+      label = ~ paste0(DateOriginal, ": ", format(Totalltems_EventRecord, big.mark = ","), " items"),
       clusterOptions = markerClusterOptions()
     ) %>%
     addMarkers(
@@ -226,7 +236,7 @@ map_spot <- function(region){
                          Year == 2017),
       lng = ~ X,
       lat = ~ Y,
-      label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+      label = ~ paste0(DateOriginal, ": ", format(Totalltems_EventRecord, big.mark = ","), " items"),
       clusterOptions = markerClusterOptions()
     ) %>%
     addMarkers(
@@ -236,7 +246,7 @@ map_spot <- function(region){
                          Year == 2016),
       lng = ~ X,
       lat = ~ Y,
-      label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
+      label = ~ paste0(DateOriginal, ": ", format(Totalltems_EventRecord, big.mark = ","), " items"),
       clusterOptions = markerClusterOptions()
     ) %>%
     addLayersControl(
@@ -257,47 +267,9 @@ map_spot <- function(region){
 
 
 
-### 1. Great Vancouver
-``````{r echo=FALSE}
+### 1. Greater Vancouver
 
-# # Great vancouver
-# leaflet() %>%
-#   addTiles() %>%
-#   addMarkers(
-#     group = "2018",
-#     data =
-#       dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
-#                        Year == 2018),
-#     lng = ~ X,
-#     lat = ~ Y,
-#     label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
-#     clusterOptions = markerClusterOptions()
-#   ) %>%
-#   addMarkers(
-#     group = "2017",
-#     data =
-#       dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
-#                        Year == 2017),
-#     lng = ~ X,
-#     lat = ~ Y,
-#     label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
-#     clusterOptions = markerClusterOptions()
-#   ) %>%
-#   addMarkers(
-#     group = "2016",
-#     data =
-#       dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
-#                        Year == 2016),
-#     lng = ~ X,
-#     lat = ~ Y,
-#     label = ~ paste0(DateOriginal, ": ", Totalltems_EventRecord, " items"),
-#     clusterOptions = markerClusterOptions()
-#   ) %>%
-#   addLayersControl(
-#     overlayGroups = c("2016", "2017", "2018"),
-#     options = layersControlOptions(collapsed = FALSE)
-#   ) %>%
-#   hideGroup(c("2016", "2017"))
+``````{r echo=FALSE, fig.width=10}
 
 map_spot("Greater Vancouver")
 
@@ -306,13 +278,41 @@ map_spot("Greater Vancouver")
 
 
 
+### 2. Thunder Bay District
+``````{r echo=FALSE, fig.width=10}
+
+map_spot("Thunder Bay District")
+
+
+```
+
+
+### 3. Toronto Division
+``````{r echo=FALSE, fig.width=10}
+
+map_spot("Toronto Division")
+
+
+```
+
+
+### 4.Peel Regional Municipality
+``````{r echo=FALSE, fig.width=10}
+
+map_spot("Peel Regional Municipality")
+
+
+```
 
 
 
+### 5.York County
+``````{r echo=FALSE, fig.width=10}
+
+map_spot("York County")
 
 
-
-
+```
 
 
 
