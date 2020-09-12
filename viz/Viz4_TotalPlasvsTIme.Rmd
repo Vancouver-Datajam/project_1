@@ -46,6 +46,6 @@ myplot <- newdat %>%
   ggtitle("Total Number of Plastic Debris (per thousand) Recovered over Time") +
   xlab("Year (Quarterly)") + ylab("Number of Plastic Debris (per thousand)") +
   theme(plot.title = element_text(hjust = 0.5))
-myplot
+myplot + scale_y_continuous(breaks=seq(from=0,to=800,by=50))
 ```
 
