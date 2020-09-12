@@ -7,6 +7,7 @@ library(tidyverse)
 library(arrow)
 library(DataExplorer)
 library(leaflet)
+library(lubridate)
 
 
 #folder
@@ -49,28 +50,48 @@ dat <-
 
 glimpse(dat)
 
-# create quick report to visualize data
-create_report(dat, output_dir = "viz")
+# # create quick report to visualize data
+# create_report(dat, output_dir = "viz")
 
 
 
-# same coordinate --------------------
+# mode dataset --------------------
 
-check <-
+# just 2018 (don't work)
+test_2018 <-
   dat %>% 
   filter(Year == 2018) %>%
   group_by(X, Y) %>%
   tally()
 
 
-# map -------------------------
+# by sub country
+count_sub_country <- 
+  dat %>%
+  filter(Year == 2018) %>%
+  group_by(SubCountry_L2_FromSource) %>%
+  tally()
 
 
+# map -----------------
+
+
+
+
+--------
+
+# Great vancouver
 leaflet() %>%
   addTiles() %>%
-  addMarkers(data = dat, 
-             lng = ~X, 
-             lat = ~Y)
+  addMarkers(
+    data =
+      dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
+                       Year == 2018),
+    lng = ~ X,
+    lat = ~ Y,
+    label = ~ paste0(ymd_hms(DateOriginal), ": ", Totalltems_EventRecord, " items"),
+    clusterOptions = markerClusterOptions()
+  )
   
   
   
