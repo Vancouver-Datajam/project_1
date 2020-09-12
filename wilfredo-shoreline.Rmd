@@ -45,15 +45,25 @@ data.table::setDTthreads(0)
 ```{r import_clean, echo=FALSE}
 dat <- read.csv(file = "raw_data/_Combined_MLW,_MDMAP,_TIDES_Data__All_Points,_2015-2018.csv", stringsAsFactors = F)
 
-str(dat)
+#total_waste_over_time
+#stacked_waste_over_time categories
 
 cad_data <- dat %>% 
-  filter(str_detect(COUNTRY, ".*Can.*"))
+  filter(ISO_CC == "CA") %>% 
+  select(-FID:-LocationFreqID, 
+         -Dataset:-CountryName_FromSource,
+         -TotalArea_Sq_m,
+         -WaterfrontName:-TotalVolunteers,
+         -StartTime:-DebrisDescription,
+         -SUM_Hard_BucketOrCrate,
+         -SUM_HardSoftLollipopStick_EarBu,
+         -Count_:-FishingOtherPlasticDebris2)
 ```
 
 
 ```{r wrangle, echo=FALSE}
 
+  
 ```
 
 
