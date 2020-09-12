@@ -97,7 +97,7 @@ line_chart <- cad_data %>%
 
 # Faceted bar chart
 faceted_bar_chart <- cad_data %>% 
-  filter(!str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL")) %>% # Exclude regions w/o major data points
+  filter(!str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL")) %>% # Exclude regions w/o major data points. Feel free to uncomment.
   group_by(date_year_month, ISO_SUB) %>% 
   summarise(total_items = sum(Totalltems_EventRecord)) %>% 
   ggplot(aes(date_year_month, total_items, ISO_SUB)) +
@@ -109,12 +109,13 @@ faceted_bar_chart <- cad_data %>%
  stacked_bar_chart <- cad_plastics %>% 
   group_by(ISO_SUB, plastic_type) %>% 
   summarise(total_items = sum(num_items)) %>% 
-  ggplot(aes(reorder(ISO_SUB, total_items), total_items, fill = plastic_type)) +
+  filter(!str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL")) %>% # Exclude regions w/o major data points. Feel free to uncomment.
+  slice_head(n = 6) %>% # Exclude plastic types with lower counts, feel free to increase count. 
+  ggplot(aes(reorder(ISO_SUB, total_items), total_items, fill = reorder(plastic_type, -total_items))) +
   geom_col() +
-  coord_flip() 
+  coord_flip() +
 
- plotly::ggplotly(stacked_bar_chart)
-  
+  plotly::ggplotly(stacked_bar_chart)
 ```
 
 
