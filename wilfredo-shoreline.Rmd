@@ -1,0 +1,71 @@
+---
+title: "Wilfredo shoreline visuals"
+author: ''
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+    toc_collapsed: no
+    toc_float: yes
+  ioslides_presentation:
+  pdf_document:
+    toc: yes
+  slidy_presentation:
+number_sections: yes
+toc_depth: 5
+always_allow_html: true
+---
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      error = TRUE,
+                      echo = FALSE,
+                      cache = TRUE,
+                      highlight = TRUE)
+```
+
+```{r load packages, echo = FALSE}
+suppressMessages(library(kableExtra))
+suppressMessages(library(scales))
+suppressMessages(library(lubridate))
+suppressMessages(library(patchwork))
+suppressMessages(library(humanize))
+suppressMessages(library(tidyverse))
+suppressMessages(library(data.table))
+suppressMessages(library(dtplyr))
+suppressMessages(library(ggthemes))
+
+data.table::setDTthreads(0)
+# library(multcomp)
+# library(bayesAB)
+# library(broom)
+```
+
+```{r import_clean, echo=FALSE}
+
+```
+
+
+```{r wrangle, echo=FALSE}
+
+```
+
+
+```{r eda, echo=FALSE}
+
+```
+
+```{r visualize}
+
+```
+
+```{r model}
+
+```
+
+```{r outputs}
+
+```
+
+
