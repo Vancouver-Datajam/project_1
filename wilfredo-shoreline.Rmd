@@ -43,7 +43,12 @@ data.table::setDTthreads(0)
 ```
 
 ```{r import_clean, echo=FALSE}
-data <- read.csv(file = "/raw_data/_Combined_MLW,_MDMAP,_TIDES_Data__All_Points,_2015-2018.csv", stringsAsFactors = F)
+dat <- read.csv(file = "raw_data/_Combined_MLW,_MDMAP,_TIDES_Data__All_Points,_2015-2018.csv", stringsAsFactors = F)
+
+str(dat)
+
+cad_data <- dat %>% 
+  filter(str_detect(COUNTRY, ".*Can.*"))
 ```
 
 
