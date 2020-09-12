@@ -1,0 +1,47 @@
+---
+title: "Random Forest Forecast"
+date: "9/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+
+# envin -----------------------------------
+
+# library
+library(tidyverse)
+library(randomForest)
+library(plotly)
+library(lubridate)
+
+
+#folder
+folder_input <- "raw_data"
+folder_fcast <- "forecasting"
+
+
+# data import -------------------------
+
+# csv
+dat <-
+  read_csv(
+    file.path(
+      "..",
+      folder_input,
+      "_Combined_MLW,_MDMAP,_TIDES_Data__All_Points,_2015-2018.csv"
+    )
+  )
+
+
+# just canadian data only
+# PS: discard the rest of data
+dat <- 
+  dat %>%
+  mutate(DateOriginal = ymd_hms(DateOriginal)) %>%
+  filter(CountryName_FromSource == "Canada" & 
+           DateOriginal >= as.Date("2016-06-01"))
+  
+
+
+```
+
