@@ -1,0 +1,159 @@
+---
+title: "Plastic Waste"
+date: "9/12/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+
+# envin -----------------------------------
+
+library(tidyverse)
+library(arrow)
+library(DataExplorer)
+library(leaflet)
+library(lubridate)
+
+
+#folder
+folder_input <- "raw_data"
+folder_viz <- "viz"
+
+
+# data import -------------------------
+
+# csv
+dat <-
+  read_csv(
+    file.path(
+      "..",
+      folder_input,
+      "_Combined_MLW,_MDMAP,_TIDES_Data__All_Points,_2015-2018.csv"
+    )
+  )
+
+
+# just canadian data only
+# PS: discard the rest of data
+dat <- 
+  dat %>%
+  filter(CountryName_FromSource == "Canada")
+
+
+
+```
+
+
+
+## Regional map
+
+```{r echo=FALSE}
+
+
+# group data by subcountry
+by_subcountry <-
+  dat %>%
+  group_by(SubCountry_L2_FromSource, Year) %>%
+  summarise(
+    across(c(X, Y, PCT_PlasticAndFoam),
+           mean),
+    across(c(Totalltems_EventRecord, TotalClassifiedItems_EC2020),
+           sum)
+  ) %>%
+  mutate(Is_AboveMean = Totalltems_EventRecord > 7231)
+
+
+
+# color
+pal <- colorFactor(c("blue", "red"), domain = c(FALSE, TRUE))
+
+
+
+# regional map
+leaflet() %>%
+  addTiles() %>%
+  addCircles(
+    data = 
+      by_subcountry %>%
+      filter(Year == 2018),
+    group = "2018",
+    lng = ~ X,
+    lat = ~ Y,
+    radius = ~Totalltems_EventRecord / 50,
+    color = ~ pal(Is_AboveMean),
+    popup = ~ paste0(
+      "<b><font size = 4>",
+      SubCountry_L2_FromSource,
+      "</b></font>",
+      "<br>Total Items recorded: ",
+      format(Totalltems_EventRecord, big.mark = ","),
+      "<br>Plastic and foam %: ",
+      paste0(round(PCT_PlasticAndFoam, 1), "%")
+    )
+  ) %>%
+  addCircles(
+    data = 
+      by_subcountry %>%
+      filter(Year == 2017),
+    group = "2017",
+    lng = ~ X,
+    lat = ~ Y,
+    radius = ~Totalltems_EventRecord,
+    color = ~ pal(Is_AboveMean),
+    popup = ~ paste0(
+      "<b><font size = 4>",
+      SubCountry_L2_FromSource,
+      "</b></font>",
+      "<br>Total Items recorded: ",
+      format(Totalltems_EventRecord, big.mark = ","),
+      "<br>Plastic and foam %: ",
+      paste0(round(PCT_PlasticAndFoam, 1), "%")
+    )) %>%
+  addLayersControl(
+    overlayGroups = c("2017", "2018"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+
+
+
+```
+
+
+## Small region
+### 1. Great Vancouver (2018)
+``````{r echo=FALSE}
+
+# Great vancouver
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(
+    data =
+      dat %>% filter(SubCountry_L2_FromSource == "Greater Vancouver" &
+                       Year == 2018),
+    lng = ~ X,
+    lat = ~ Y,
+    label = ~ paste0(ymd_hms(DateOriginal), ": ", Totalltems_EventRecord, " items"),
+    clusterOptions = markerClusterOptions()
+  )
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
