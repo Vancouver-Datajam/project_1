@@ -1,7 +1,7 @@
 # Citizen Science ml team
 # Zaid's Team Project: Earth Challenge Integrated Data: Plastic Pollution
 
-## Team members' names: <>
+## Team members' names: Zaid Haddad, Matthew Barnes, Priyanka Gagneja, Lavinia Lau, Nabila Doctor, Tochukwu Okeke, Daniel Lee, Julie Merchel & Wilfredo Contreras
 
 ## Project Description: 
 
