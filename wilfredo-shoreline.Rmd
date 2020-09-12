@@ -74,18 +74,45 @@ cad_plastics <- cad_data %>%
 ```
 
 ```{r visuals, echo=FALSE}
-
 # Monthly bar chart.
 bar_chart <- cad_data %>% 
   group_by(date_year_month) %>% 
   summarise(total_items = sum(Totalltems_EventRecord)) %>% 
   ggplot(aes(date_year_month, total_items)) +
   geom_col() +
-  scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months") 
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  xlab("Year-Month") + 
+  ylab("Items (in Thousands)") +
+  theme_clean()
+  ggsave("total_waste_bar_chart.jpg", width = 10)
 
 # Save interactive plotly object
 plotly::ggplotly(bar_chart) %>% 
   htmlwidgets::saveWidget("total_waste_bar.html")
+
+# Aux table to keep top 8 worst plastics, by freq
+worst_plastic_types <- cad_plastics %>% 
+  group_by(plastic_type) %>% 
+  summarise(total_items = sum(num_items)) %>% 
+  slice_max(total_items, n =  8)
+
+
+# Monthly stacked bar chart 
+monthly_stacked_bar_chart <- cad_plastics %>% 
+  group_by(date_year_month, plastic_type) %>% 
+  summarise(total_items = sum(num_items)) %>%
+  semi_join(worst_plastic_types, by = "plastic_type") %>% 
+  ggplot(aes(date_year_month, total_items, fill = reorder(plastic_type, -total_items))) +
+  geom_col() +
+  theme_clean() + 
+  scale_fill_brewer(palette = "Paired") +
+  labs(fill = "Plastic types (Worst 8)") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months") +
+  xlab("Year-Month") + 
+  ylab("Items (in Thousands)") +
+  ggsave("stacked_bar_province.jpg", width = 16)
 
 # Daily line chart
 line_chart <- cad_data %>% 
@@ -94,7 +121,10 @@ line_chart <- cad_data %>%
   ggplot(aes(date, total_items)) +
   geom_line() +
   scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") +
-  ggsave("plastic_line_chart.jpg")
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  xlab("Year-Month") + 
+  ylab("Items (in Thousands)") + 
+  ggsave("waste_line_chart.jpg")
 
 # Faceted bar chart
 faceted_bar_chart <- cad_data %>% 
@@ -104,20 +134,41 @@ faceted_bar_chart <- cad_data %>%
   ggplot(aes(date_year_month, total_items, ISO_SUB)) +
   geom_col() +
   scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") +
-  facet_wrap(vars(ISO_SUB))
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  facet_wrap(vars(ISO_SUB)) + 
+  ggsave("faceted_bar_prov.jpg", width = 16)
 
-# Stacked bar chart
+
+# Stacked bar chart province
  stacked_bar_chart <- cad_plastics %>% 
   group_by(ISO_SUB, plastic_type) %>% 
   summarise(total_items = sum(num_items)) %>% 
   filter(!str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL")) %>% # Exclude regions w/o major data points. Feel free to uncomment.
-  slice_head(n = 6) %>% # Exclude plastic types with lower counts, feel free to increase count. 
+  semi_join(worst_plastic_types, by = "plastic_type") %>% 
   ggplot(aes(reorder(ISO_SUB, total_items), total_items, fill = reorder(plastic_type, -total_items))) +
   geom_col() +
-  coord_flip() 
-
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  coord_flip() +
+  ggsave("stacked_bar_province.jpg", width = 16)
+ 
   plotly::ggplotly(stacked_bar_chart) %>% 
     htmlwidgets::saveWidget("stacked_bar_chart.html")
+  
+```
+
+
+```{r visuals, echo=FALSE}
+
+ cad_plastics %>% 
+  group_by(plastic_type) %>% 
+  summarise(total_items = sum(num_items)) %>% 
+  slice_max(total_items, n =  8)
+
+
+# Monthly stacked bar chart 
+ cad_plastics %>% 
+  group_by(date_year_month, plastic_type) %>% 
+  summarise(total_items = sum(num_items)) 
 ```
 
 
