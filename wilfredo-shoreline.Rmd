@@ -151,6 +151,8 @@ faceted_bar_chart <- cad_data %>%
   geom_col() +
   scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
   coord_flip() +
+  xlab("Year-Month") + 
+  ylab("Items (in Thousands)") +
   ggsave("stacked_bar_province.jpg", width = 16)
  
   plotly::ggplotly(stacked_bar_chart) %>% 
