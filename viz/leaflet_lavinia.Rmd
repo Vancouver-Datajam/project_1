@@ -1,8 +1,7 @@
 ---
 title: "Plastic Waste"
 date: "9/12/2020"
-output: md_document
-always_allow_html: true
+output: html_document
 ---
 
 
