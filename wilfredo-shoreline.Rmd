@@ -38,6 +38,9 @@ suppressMessages(library(dtplyr))
 suppressMessages(library(ggthemes))
 
 data.table::setDTthreads(0)
+
+
+
 # library(multcomp)
 # library(bayesAB)
 # library(broom)
@@ -45,9 +48,6 @@ data.table::setDTthreads(0)
 
 ```{r import_clean, echo=FALSE}
 dat <- read.csv(file = "raw_data/_Combined_MLW,_MDMAP,_TIDES_Data__All_Points,_2015-2018.csv", stringsAsFactors = F)
-
-#total_waste_over_time
-#stacked_waste_over_time categories
 
 cad_data <- dat %>% 
   filter(ISO_CC == "CA") %>% 
@@ -63,14 +63,20 @@ cad_data <- dat %>%
          date_year_month = floor_date(date_daily, unit = "month")) %>% # Create year-month field.
   filter(date_year_month >= "2016-06-01")
 
-# line plot
-# category
+# Wrangle the data to get the plastic types
 
+cad_data %>% 
+  pivot_longer(contains("SUM"), names_to = "plastic_type", values_to = "num_items") %>% 
+  filter(num_items > 0) %>% 
+  mutate(plastic_type = str_replace(plastic_type, "SUM_", "")) %>% 
+  group_by(plastic_type) %>% 
+  filter(!str_detect(plastic_type, ))
+  count() %>% 
+  arrange(desc(n))
 
 ```
 
-
-```{r wrangle, echo=FALSE}
+```{r visuals, echo=FALSE}
 
 # Monthly bar chart.
 bar_chart <- cad_data %>% 
@@ -92,8 +98,9 @@ line_chart <- cad_data %>%
   geom_line() +
   scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") 
 
+# Faceted bar chart
 faceted_bar_chart <- cad_data %>% 
-  filter(str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL", negate = TRUE)) %>% 
+  filter(!str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL")) %>% # Exclude regions w/o major data points
   group_by(date_year_month, ISO_SUB) %>% 
   summarise(total_items = sum(Totalltems_EventRecord)) %>% 
   ggplot(aes(date_year_month, total_items, ISO_SUB)) +
@@ -101,23 +108,7 @@ faceted_bar_chart <- cad_data %>%
   scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") +
   facet_wrap(vars(ISO_SUB))
 
-faceted_bar_chart
-```
-
-
-```{r eda, echo=FALSE}
-
-```
-
-```{r visualize}
-
-```
-
-```{r model}
-
-```
-
-```{r outputs}
+# Stacked bar chart
 
 ```
 
