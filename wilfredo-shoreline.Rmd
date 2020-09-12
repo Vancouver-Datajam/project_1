@@ -65,15 +65,12 @@ cad_data <- dat %>%
 
 # Wrangle the data to get the plastic types
 
-cad_data %>% 
-  pivot_longer(contains("SUM"), names_to = "plastic_type", values_to = "num_items") %>% 
+cad_plastics <- cad_data %>% 
+  pivot_longer(contains("SUM"), names_to = "plastic_type", values_to = "num_items") %>% # Where the magic happens.
   filter(num_items > 0) %>% 
-  mutate(plastic_type = str_replace(plastic_type, "SUM_", "")) %>% 
-  group_by(plastic_type) %>% 
-  filter(!str_detect(plastic_type, ))
-  count() %>% 
-  arrange(desc(n))
-
+  mutate(plastic_type = str_replace(plastic_type, "SUM_", "")) %>% # Clean the names a bit.
+  filter(!str_detect(plastic_type, "Soft_StringRingRibbon|Hard_Lighter")) # Clean up the visuals by removing low freq types.
+  
 ```
 
 ```{r visuals, echo=FALSE}
@@ -109,7 +106,15 @@ faceted_bar_chart <- cad_data %>%
   facet_wrap(vars(ISO_SUB))
 
 # Stacked bar chart
+ stacked_bar_chart <- cad_plastics %>% 
+  group_by(ISO_SUB, plastic_type) %>% 
+  summarise(total_items = sum(num_items)) %>% 
+  ggplot(aes(reorder(ISO_SUB, total_items), total_items, fill = plastic_type)) +
+  geom_col() +
+  coord_flip() 
 
+ plotly::ggplotly(stacked_bar_chart)
+  
 ```
 
 
