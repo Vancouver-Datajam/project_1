@@ -167,7 +167,7 @@ faceted_bar_chart <- cad_data %>%
   group_by(plastic_type) %>% 
   summarise(total_items = sum(num_items)) %>% 
   slice_max(total_items, n =  8)
-
+#test
 
 # Monthly stacked bar chart 
  cad_plastics %>% 
