@@ -75,10 +75,74 @@ count_sub_country <-
 
 # map -----------------
 
+# group data by subcountry
+by_subcountry <-
+  dat %>%
+  group_by(SubCountry_L2_FromSource, Year) %>%
+  summarise(
+    across(c(X, Y, PCT_PlasticAndFoam),
+           mean),
+    across(c(Totalltems_EventRecord, TotalClassifiedItems_EC2020),
+           sum)
+  ) %>%
+  mutate(Is_AboveMean = Totalltems_EventRecord > 7231)
 
 
 
---------
+# color
+pal <- colorFactor(c("blue", "red"), domain = c(FALSE, TRUE))
+
+
+
+# regional map
+leaflet() %>%
+  addTiles() %>%
+  addCircles(
+    data = 
+      by_subcountry %>%
+      filter(Year == 2018),
+    group = "2018",
+    lng = ~ X,
+    lat = ~ Y,
+    radius = ~Totalltems_EventRecord / 50,
+    color = ~ pal(Is_AboveMean),
+    popup = ~ paste0(
+      "<b><font size = 4>",
+      SubCountry_L2_FromSource,
+      "</b></font>",
+      "<br>Total Items recorded: ",
+      format(Totalltems_EventRecord, big.mark = ","),
+      "<br>Plastic and foam %: ",
+      paste0(round(PCT_PlasticAndFoam, 1), "%")
+    )
+  ) %>%
+  addCircles(
+    data = 
+      by_subcountry %>%
+      filter(Year == 2017),
+    group = "2017",
+    lng = ~ X,
+    lat = ~ Y,
+    radius = ~Totalltems_EventRecord,
+    color = ~ pal(Is_AboveMean),
+    popup = ~ paste0(
+      "<b><font size = 4>",
+      SubCountry_L2_FromSource,
+      "</b></font>",
+      "<br>Total Items recorded: ",
+      format(Totalltems_EventRecord, big.mark = ","),
+      "<br>Plastic and foam %: ",
+      paste0(round(PCT_PlasticAndFoam, 1), "%")
+    )) %>%
+  addLayersControl(
+    overlayGroups = c("2017", "2018"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+
+
+
+# smaller area --------
 
 # Great vancouver
 leaflet() %>%
@@ -92,7 +156,9 @@ leaflet() %>%
     label = ~ paste0(ymd_hms(DateOriginal), ": ", Totalltems_EventRecord, " items"),
     clusterOptions = markerClusterOptions()
   )
-  
+
+
+# WIP
   
   
   
