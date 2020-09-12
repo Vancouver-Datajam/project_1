@@ -97,7 +97,6 @@ worst_plastic_types <- cad_plastics %>%
   summarise(total_items = sum(num_items)) %>% 
   slice_max(total_items, n =  8)
 
-
 # Monthly stacked bar chart 
 monthly_stacked_bar_chart <- cad_plastics %>% 
   group_by(date_year_month, plastic_type) %>% 
@@ -112,6 +111,7 @@ monthly_stacked_bar_chart <- cad_plastics %>%
   scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months") +
   xlab("Year-Month") + 
   ylab("Items (in Thousands)") +
+  theme_clean() + 
   ggsave("stacked_bar_province.jpg", width = 16)
 
 # Daily line chart
@@ -135,6 +135,8 @@ faceted_bar_chart <- cad_data %>%
   geom_col() +
   scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") +
   scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+    xlab("Year-Month") + 
+  ylab("Items (in Thousands)") +
   facet_wrap(vars(ISO_SUB)) + 
   ggsave("faceted_bar_prov.jpg", width = 16)
 
