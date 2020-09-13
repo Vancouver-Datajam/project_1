@@ -118,9 +118,8 @@ plot_df <- data.frame(DateVar = model_3_plastic_data$DateStandardized,
 library(plotly)
 plot_plastic <- plot_df %>% 
   ggplot(aes(DateVar,Fitted)) + 
-  geom_line()
+  geom_line() +
+  ggtitle("Estimated Plastic Waste")
 
-interacticve_plastic <- ggplotly(plot_plastic)
+# interacticve_plastic <- ggplotly(plot_plastic) didn't work
 
-interacticve_plastic
-#Linear Extrapolation

@@ -103,6 +103,7 @@ waste_df <- data.frame(Date_Var = model_3_waste_data$DateStandardized,
 
 
 #Plot
-plot_waste <- waste_df %>% ggplot(aes(Date_Var,Fitted)) + geom_line()
+plot_waste <- waste_df %>% ggplot(aes(Date_Var,Fitted)) + geom_line() +
+  ggtitle("Estimated Waste")
 
-ggplotly(plot_waste)
+# ggplotly(plot_waste) didn't work
