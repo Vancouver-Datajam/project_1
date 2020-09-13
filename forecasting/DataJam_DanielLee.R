@@ -42,12 +42,12 @@ SampleData <- SampleData %>%
            "SUM_HardSoft_PersonalCareProduc",
            "SUM_Soft_Bag",
            "SUM_Soft_WrapperOrLabel",
-           "SUM_Soft_Straw",,
+           "SUM_Soft_Straw",
            "SUM_Soft_CigaretteButts",
            "SUM_Soft_StringRingRibbon",
            "SUM_FishingLineLureRope",
            "SUM_Foam_OtherPlasticDebris",
-           "SUM_OtherPlasticDebris",,
+           "SUM_OtherPlasticDebris",
            "DOW",
            "NAME",
            "Shape__Area",
@@ -76,7 +76,7 @@ RFmodel <- randomForest(TotalVolunteers ~ ., data = Sample_train, ntree = 500, m
 
 #Tune RF - ntrees: 500 or 1000, although we see tiny decrease of OOB error at 1000
 oob.error.rate <- data.frame(RFmodel$mse)
-oob.error.rate$Trees <- c(1:1000)
+oob.error.rate$Trees <- c(1:500)
 oob.error.plot <- oob.error.rate %>%
   ggplot(aes(x = Trees, y = RFmodel.mse)) +
   geom_line()
@@ -86,7 +86,6 @@ oob.values <- vector(length=10)
 #Predict 
 Prediction <- as.data.frame(predict(RFmodel,Sample_test))
 
-Sample_test <- Sample_test %>%
 PredictionData <- Sample_test %>%
   select(c("TotalVolunteers","DateStandardized"))
 
