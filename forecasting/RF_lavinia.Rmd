@@ -39,9 +39,161 @@ dat <-
   dat %>%
   mutate(DateOriginal = ymd_hms(DateOriginal)) %>%
   filter(CountryName_FromSource == "Canada" & 
-           DateOriginal >= as.Date("2016-06-01"))
-  
+           DateOriginal >= as.Date("2016-06-01")) %>%
+  mutate(
+    across(c(Month, DOW, LAND_TYPE,ISO_SUB),
+           as.factor)
+  )
+
+
+# top 50 subcountry -------------------------
+
+# find top 50
+# PS: Because RF doesn't support over 53 categories
+top_50 <-
+  dat %>%
+  group_by(SubCountry_L2_FromSource) %>%
+  summarise(TotalVolunteers = sum(TotalVolunteers)) %>%
+  slice_max(TotalVolunteers, n = 50)
+
+
+# find what not in top 50
+
+
+# change subcountry
+dat <-
+  dat %>%
+  mutate(SubCountry_Combined = as.factor(
+    ifelse(
+      dat$SubCountry_L2_FromSource %in% c(top_50$SubCountry_L2_FromSource),
+      dat$SubCountry_L2_FromSource,
+      "Others"
+    )
+  ))
+
+# train and test ---------------
+
+# set.seed
+set.seed(100)
+
+id <- sample(nrow(dat), nrow(dat) * 0.2)
+
+
+
+# train features
+train_features <- c(
+  "Year",
+  "Month",
+  "DOW",
+  "Day",
+  "SubCountry_Combined",
+  "LAND_TYPE",
+  "ISO_SUB",
+  "Shape__Area",
+  "Shape__Length"
+)
+
+
+# train and test
+train <- 
+  dat[-id, ] %>%
+  select(train_features, TotalVolunteers, DateOriginal) %>%
+  filter(!is.na(SubCountry_Combined) & !is.na(LAND_TYPE))
+
+test <- 
+  dat[id, ] %>%
+  select(train_features, TotalVolunteers, DateOriginal) %>%
+  filter(!is.na(SubCountry_Combined) & !is.na(LAND_TYPE))
+
+
+# model training ---------------------
+
+# train the model
+train_rf <-
+  randomForest(
+    train[, train_features],
+    train$TotalVolunteers,
+    ntree = 100,
+    importance = TRUE
+  )
+
+```
+
+```{r}
+
+print(train_rf)
+
+```
+
+
+
+```{r varplot, echo=FALSE}
+
+varImpPlot(train_rf)
 
 
 ```
+
+
+```{r predict, echo=FALSE}
+
+# test
+test$Volunteer_Fcast <-
+  predict(train_rf, test[, train_features])
+
+
+# train
+train$Volunteer_Fcast <-
+  predict(train_rf, train[, train_features])
+
+
+# combine test and train
+output <- rbind(train, test)
+
+
+# longer
+output_longer <-
+  output %>%
+  select(
+    DateOriginal,
+    SubCountry_Combined,
+    TotalVolunteers,
+    Volunteer_Fcast
+    ) %>%
+  pivot_longer(
+    cols = c(TotalVolunteers, Volunteer_Fcast),
+    names_to = "Type",
+    values_to = "Volunteers"
+  )
+
+
+
+```
+
+
+```{r graph, echo=FALSE}
+
+ggplot(
+  output_longer %>%
+    filter(SubCountry_Combined == "Greater Vancouver" & 
+             DateOriginal >= as.Date("2018-01-01")),
+  aes(x = DateOriginal,
+      y = Volunteers,
+      color = Type,
+      group = Type)
+) +
+  geom_line() +
+  labs(
+    title = "Prediction of Volunteers in Great Vancouver (2018)"
+  )
+
+
+
+
+```
+
+
+
+
+
 
