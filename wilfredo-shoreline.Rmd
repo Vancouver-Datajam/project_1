@@ -1,0 +1,178 @@
+---
+title: "Wilfredo shoreline visuals"
+author: ''
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+    toc_collapsed: no
+    toc_float: yes
+  ioslides_presentation:
+  pdf_document:
+    toc: yes
+  slidy_presentation:
+number_sections: yes
+toc_depth: 5
+always_allow_html: true
+---
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      error = TRUE,
+                      echo = FALSE,
+                      cache = TRUE,
+                      highlight = TRUE)
+```
+
+```{r load packages, echo = FALSE}
+suppressMessages(library(kableExtra))
+suppressMessages(library(scales))
+suppressMessages(library(lubridate))
+suppressMessages(library(patchwork))
+suppressMessages(library(humanize))
+suppressMessages(library(tidyverse))
+suppressMessages(library(scales))
+suppressMessages(library(data.table))
+suppressMessages(library(dtplyr))
+suppressMessages(library(ggthemes))
+
+data.table::setDTthreads(0)
+
+
+
+# library(multcomp)
+# library(bayesAB)
+# library(broom)
+```
+
+```{r import_clean, echo=FALSE}
+dat <- read.csv(file = "raw_data/_Combined_MLW,_MDMAP,_TIDES_Data__All_Points,_2015-2018.csv", stringsAsFactors = F)
+
+cad_data <- dat %>% 
+  filter(ISO_CC == "CA") %>% 
+  select(-FID:-LocationFreqID, # Remove uninformative columns.
+         -Dataset:-CountryName_FromSource,
+         -TotalArea_Sq_m,
+         -WaterfrontName:-TotalVolunteers,
+         -StartTime:-DebrisDescription,
+         -SUM_Hard_BucketOrCrate,
+         -SUM_HardSoftLollipopStick_EarBu,
+         -Count_:-FishingOtherPlasticDebris2) %>% 
+  mutate(date_daily = as_date(DateStandardized), 
+         date_year_month = floor_date(date_daily, unit = "month")) %>% # Create year-month field.
+  filter(date_year_month >= "2016-06-01")
+
+# Wrangle the data to get the plastic types
+
+cad_plastics <- cad_data %>% 
+  pivot_longer(contains("SUM"), names_to = "plastic_type", values_to = "num_items") %>% # Where the magic happens.
+  filter(num_items > 0) %>% 
+  mutate(plastic_type = str_replace(plastic_type, "SUM_", "")) %>% # Clean the names a bit.
+  filter(!str_detect(plastic_type, "Soft_StringRingRibbon|Hard_Lighter")) # Clean up the visuals by removing low freq types.
+  
+```
+
+```{r visuals, echo=FALSE}
+# Monthly bar chart.
+bar_chart <- cad_data %>% 
+  group_by(date_year_month) %>% 
+  summarise(total_items = sum(Totalltems_EventRecord)) %>% 
+  ggplot(aes(date_year_month, total_items)) +
+  geom_col() +
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  xlab("Year-Month") + 
+  ylab("Items (in Thousands)") +
+  theme_clean()
+  ggsave("total_waste_bar_chart.jpg", width = 10)
+
+# Save interactive plotly object
+plotly::ggplotly(bar_chart) %>% 
+  htmlwidgets::saveWidget("total_waste_bar.html")
+
+# Aux table to keep top 8 worst plastics, by freq
+worst_plastic_types <- cad_plastics %>% 
+  group_by(plastic_type) %>% 
+  summarise(total_items = sum(num_items)) %>% 
+  slice_max(total_items, n =  8)
+
+# Monthly stacked bar chart 
+monthly_stacked_bar_chart <- cad_plastics %>% 
+  group_by(date_year_month, plastic_type) %>% 
+  summarise(total_items = sum(num_items)) %>%
+  semi_join(worst_plastic_types, by = "plastic_type") %>% 
+  ggplot(aes(date_year_month, total_items, fill = reorder(plastic_type, -total_items))) +
+  geom_col() +
+  theme_clean() + 
+  scale_fill_brewer(palette = "Paired") +
+  labs(fill = "Plastic types (Worst 8)") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "2 months") +
+  xlab("Year-Month") + 
+  ylab("Items (in Thousands)") +
+  theme_clean() + 
+  ggsave("stacked_bar_province.jpg", width = 16)
+
+# Daily line chart
+line_chart <- cad_data %>% 
+  group_by(date = date_year_month) %>%  
+  summarise(total_items = sum(Totalltems_EventRecord)) %>% 
+  ggplot(aes(date, total_items)) +
+  geom_line() +
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  xlab("Year-Month") + 
+  ylab("Items (in Thousands)") + 
+  ggsave("waste_line_chart.jpg")
+
+# Faceted bar chart
+faceted_bar_chart <- cad_data %>% 
+  filter(!str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL")) %>% # Exclude regions w/o major data points. Feel free to uncomment.
+  group_by(date_year_month, ISO_SUB) %>% 
+  summarise(total_items = sum(Totalltems_EventRecord)) %>% 
+  ggplot(aes(date_year_month, total_items, ISO_SUB)) +
+  geom_col() +
+  scale_x_date(labels = date_format("%Y-%m"), breaks = "4 months") +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+    xlab("Year-Month") + 
+  ylab("Items (in Thousands)") +
+  facet_wrap(vars(ISO_SUB)) + 
+  ggsave("faceted_bar_prov.jpg", width = 16)
+
+
+# Stacked bar chart province
+ stacked_bar_chart <- cad_plastics %>% 
+  group_by(ISO_SUB, plastic_type) %>% 
+  summarise(total_items = sum(num_items)) %>% 
+  filter(!str_detect(ISO_SUB, "MB|NT|NU|SK|PE|YT|NL")) %>% # Exclude regions w/o major data points. Feel free to uncomment.
+  semi_join(worst_plastic_types, by = "plastic_type") %>% 
+  ggplot(aes(reorder(ISO_SUB, total_items), total_items, fill = reorder(plastic_type, -total_items))) +
+  geom_col() +
+  scale_y_continuous(labels = unit_format(unit = "", scale = 1e-3)) +
+  coord_flip() +
+  xlab("Year-Month") + 
+  ylab("Items (in Thousands)") +
+  ggsave("stacked_bar_province.jpg", width = 16)
+ 
+  plotly::ggplotly(stacked_bar_chart) %>% 
+    htmlwidgets::saveWidget("stacked_bar_chart.html")
+  
+```
+
+
+```{r visuals, echo=FALSE}
+
+ cad_plastics %>% 
+  group_by(plastic_type) %>% 
+  summarise(total_items = sum(num_items)) %>% 
+  slice_max(total_items, n =  8)
+#test
+
+# Monthly stacked bar chart 
+ cad_plastics %>% 
+  group_by(date_year_month, plastic_type) %>% 
+  summarise(total_items = sum(num_items)) 
+```
+
+
